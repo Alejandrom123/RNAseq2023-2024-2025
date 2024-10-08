@@ -1,6 +1,4 @@
-#Definitive script 
 
-#Packages
 library("ggplot2")
 library("gridExtra")
 library("edgeR")
@@ -11,11 +9,6 @@ library(ggplot2)
 library(RColorBrewer)
 library(dendextend)
 
-
-####1. Transcriptome Analysis with ONLY treated (Sample p3 eliminated)####
-#The next analysis is performed with only treated samples. For improving resolution and to see differences, PCA is based ONLY on permethrin and ONLY on lambda-cyhalothrin DEG.
-
-#Count table
 countTable = read.table("C:/Users/alejandro/Desktop/Segundo artículo Transcriptómica Aedes/After_bam-R/1_Conteos/Counts_RNAseq_subsample_2024_V2.txt", sep="\t", header=T, row.names = 1)
 
 #Remover columnas de counTable
@@ -29,12 +22,10 @@ colData = read.table("C:/Users/Alejandro/Desktop/Segundo artículo Transcriptóm
 colData = colData[(4:21), , drop = F]
 colData <- colData[-12, , drop = FALSE]
 
-#Check if columns and rows names match
 all(colnames(countTable) %in% rownames(colData))
 
 all(colnames(countTable) == rownames(colData))
 
-#Removing genes with read counts <32
 countTable[, "max"]= apply(countTable[, 1:ncol(countTable)], 1, max)
 countTable=countTable[countTable[,ncol(countTable)]>32,] 
 countTable= countTable [,-ncol(countTable)]
@@ -43,41 +34,34 @@ countTable= countTable [,-ncol(countTable)]
 #gene_universe <-rownames(countTable)
 #write.table(as.data.frame(gene_universe),file="gene_universe_countTable.csv")
 
-#Perform the Differential Expression analysis
 library(DESeq2)
 dds<-DESeqDataSetFromMatrix(countData= countTable,colData= colData,design= ~ estado_susceptibilidad)
 dds<-DESeq(dds)
 dds <- estimateSizeFactors(dds)
 sizeFactors(dds)
 normalized_counts <- counts(dds, normalized=TRUE)
-#plotDispEsts(dds)
 
-
-library(dplyr)
-#Lambda
-##HLR75 vs LL25
 res1<-results(dds,contrast=c("estado_susceptibilidad","L_resistente75","L_resistente25"))
 Lambda_Res75vRes25= as.data.frame(res1)
 #write.table(as.data.frame(res1), file = "res1_HLRvsLLR_1.csv")
 Lambda_Res75vRes25= subset.data.frame(Lambda_Res75vRes25, padj<0.05 & abs(log2FoldChange)>1)
 #write.table(as.data.frame(Lambda_Res75vRes25),file="Lambda_Resistente75vResistente25.csv")
 
-#HLR75 vs HLS75
+
 res2<-results(dds,contrast=c("estado_susceptibilidad","L_resistente75","L_susceptible75"))
 Lambda_Res75vSusc75= as.data.frame(res2)
 #write.table(as.data.frame(res2), file = "res2_HLRvsHLS.csv")
 Lambda_Res75vSusc75= subset.data.frame(Lambda_Res75vSusc75, padj<0.05 & abs(log2FoldChange)>1)
 #write.table(as.data.frame(Lambda_Res75vSusc75),file="Lambda_Resistente75vSuseptible75.csv")
 
-#Permet
-#HPR75 vs LPR25
+
 res3<-results(dds,contrast=c("estado_susceptibilidad","P_resistente75","P_resistente25"))
 Perm_Res75vRes25= as.data.frame(res3)
 #write.table(as.data.frame(res3),file="res3_HPRvsLPR.csv")
 Perm_Res75vRes25= subset.data.frame(Perm_Res75vRes25, padj<0.05 & abs(log2FoldChange)>1)
 #write.table(as.data.frame(Perm_Res75vRes25),file="Perm_Resistente75vResistente25.csv")
 
-#HPR75 vs HPS75
+
 res4<-results(dds,contrast=c("estado_susceptibilidad","P_resistente75","P_susceptible75"))
 Perm_Res75vSusc75= as.data.frame(res4)
 #write.table(as.data.frame(res4),file="res4_HPRvsHPS.csv")
@@ -85,22 +69,20 @@ Perm_Res75vSusc75= subset.data.frame(Perm_Res75vSusc75, padj<0.05 & abs(log2Fold
 #write.table(as.data.frame(Perm_Res75vSusc75),file="Perm_Resistente75vSusceptible75.csv")
 
 
-###comparations Susceptible 75 vs resistent 25###
-#Permethrin
 res5<-results(dds,contrast=c("estado_susceptibilidad","P_susceptible75","P_resistente25"))
 Perm_Susc75vRes25= as.data.frame(res5)
 #write.table(as.data.frame(res5),file="res5_HPSvsLPR.csv")
 Perm_Susc75vRes25= subset.data.frame(Perm_Susc75vRes25, padj<0.05 & abs(log2FoldChange)>1)
 #write.table(as.data.frame(Perm_Susc75vRes25),file="Perm_Susceptible75vResistente25.csv")
 
-#Lambda-cyhalothrin
+
 res6<-results(dds,contrast=c("estado_susceptibilidad","L_susceptible75","L_resistente25"))
 Lambda_Susc75vRes25= as.data.frame(res6)
 #write.table(as.data.frame(res6),file="res6_HLSvsLPS.csv")
 Lambda_Susc75vRes25= subset.data.frame(Lambda_Susc75vRes25, padj<0.05 & abs(log2FoldChange)>1)
 #write.table(as.data.frame(Lambda_Susc75vRes25),file="Lambda_Susceptible75vResistente25.csv")
 
-###Obtaining row names of each of the comparations
+
 genes_nameres1 = rownames(Lambda_Res75vRes25)
 genes_nameres2 = rownames(Lambda_Res75vSusc75)
 genes_nameres3 = rownames(Perm_Res75vRes25)
@@ -108,7 +90,7 @@ genes_nameres4 = rownames(Perm_Res75vSusc75)
 genes_nameres5 = rownames(Perm_Susc75vRes25)
 genes_nameres6 = rownames(Lambda_Susc75vRes25)
 
-#Merge of the rownames to obtain subsets of each genes and each insecticide
+
 names_genes= c(genes_nameres1,genes_nameres2,genes_nameres3,genes_nameres4,genes_nameres5,genes_nameres6)
 normalized_subset <- normalized_counts[rownames(normalized_counts) %in% names_genes, ]
 normalized_subset_Permetrina <- normalized_subset[,10:17]
@@ -118,7 +100,6 @@ normalized_subset_Lambdacialotrina <- normalized_subset[,1:9]
 
 ##Correlación spearman y PCA con DEGs de comoparaciones con solo Permetrina##
 
-#PCA of Normalized counts of Permethrine
 DEG_Z_Permetrina=t(scale(t(normalized_subset_Permetrina)))
 
 pca <- prcomp(t(DEG_Z_Permetrina))
@@ -141,13 +122,11 @@ ggplot(data=pca.data, aes(x=X, y=Y)) +
 
 correlation= cor(normalized_subset_Permetrina, method= "spearman")
 colors = colorRampPalette(brewer.pal(9, "RdBu"))(100)
-heatmap.2(correlation, main= "Spearman DEG´s Permthrin", trace="none", col = colors , margin=c(10, 10), scale = "none")
 
 ###Distancia Euclidiana### Da horrible ni la hice
 
 ##Correlación spearman y PCA con DEGs de comoparaciones con solo Lambdacialotrina##
 
-#Normalized counts lambda-cyhalothrin
 DEG_Z_Lambdacialotrina=t(scale(t(normalized_subset_Lambdacialotrina)))
 
 pca <- prcomp(t(DEG_Z_Lambdacialotrina))
@@ -166,12 +145,7 @@ ggplot(data=pca.data, aes(x=X, y=Y)) +
   ylab(paste("PC2 - ", pca.var.per[2], "%", sep="")) +
   ggtitle("PCA resistentes y susceptibles DEG´s solo Tratados.")
 
-###Correlation lambda-cyhalothrin 
-correlation= cor(normalized_subset_Lambdacialotrina, method= "spearman")
-colors = colorRampPalette(brewer.pal(9, "RdBu"))(100)
-heatmap.2(correlation, main= "Spearman DEG´s Lambda", trace="none", col = colors , margin=c(10, 10), scale = "none")
 
-###All treated
 DEG_Z_PCA=t(scale(t(normalized_subset)))
 
 pca <- prcomp(t(DEG_Z_PCA))
@@ -188,11 +162,6 @@ ggplot(data=pca.data, aes(x=X, y=Y)) +
   geom_text(aes(label=Sample)) +
   xlab(paste("PC1 - ", pca.var.per[1], "%", sep="")) +
   ylab(paste("PC2 - ", pca.var.per[2], "%", sep="")) +
-  ggtitle("PCA DEG´s solo Tratados.")
-
-#write.table(as.data.frame(pca.data), file = "PCA.data_DEGS_Tratamientos.csv")
-
-
 
 # ===================#
 # == HEATMAP CORREGULACION#
@@ -212,7 +181,6 @@ hmcol = colorRampPalette(brewer.pal(9, "GnBu"))(100)
 hmcol2 = colorRampPalette(brewer.pal(11, "RdBu"))(100)
 heatmap.2(all_Z2, col = hmcol2, trace="none", margin=c(10, 6))
 heatmap.2(all_Z2, trace = "none",  col = hmcol2, labRow = F )
-
 
 
 ####10. Análisis de Transcriptoma definitivo con TRATADOS Y SUSCEPTIBLES con muestra P3 eliminada del análisis####
@@ -247,7 +215,7 @@ normalized_counts <- counts(dds, normalized=TRUE)
 
 colnames(normalized_counts) <- c("S1", "S2", "S3","LLR-1", "LLR-2", "LLR-3", "HLS-1", "HLS-2", "HLS-3", "HLR-1", "HLR-2", "HLR-3", "LPR-1", "LPR-2", "HPS-1", "HPS-2", "HPS-3", "HPR-1", "HPR-2", "HPR-3") 
 
-#write.table(as.data.frame(normalized_counts),file="normalized_counts.csv")
+
 getwd()
 
 library(dplyr)
@@ -287,7 +255,7 @@ Perm_Res25v_Susc= subset.data.frame(Perm_Res25v_Susc, padj<0.01 & abs(log2FoldCh
 
 res12<-results(dds,contrast=c("estado_susceptibilidad","P_resistente75","P_resistente25"))
 Perm_Res75v_Res25= as.data.frame(res12)
-#write.table(as.data.frame(res12), file= "res12_HPRvLPR.csv")
+
 Perm_Res75v_Susc= subset.data.frame(Perm_Res75v_Susc, padj<0.01 & abs(log2FoldChange)>2)
 #write.table(as.data.frame(Perm_Res75v_Susc),file="P_Resistente75v_Susceptible.csv")
 
